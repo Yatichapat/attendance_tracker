@@ -27,6 +27,7 @@ def react_login_redirect(request):
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/login/", react_login_redirect, name="account_login"),
+    path("api/", include("user.urls")),
 
     # allauth routes
     path("accounts/", include("allauth.urls")),

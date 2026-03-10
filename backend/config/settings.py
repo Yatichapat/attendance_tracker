@@ -53,12 +53,14 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'user',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'config.cors.SimpleCorsMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -135,6 +137,9 @@ STATIC_URL = 'static/'
 
 SITE_ID = 1
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000').rstrip('/')
+AUTHORIZED_LOCATION_LAT = float(os.getenv('AUTHORIZED_LOCATION_LAT', '13.7563'))
+AUTHORIZED_LOCATION_LNG = float(os.getenv('AUTHORIZED_LOCATION_LNG', '100.5018'))
+ATTENDANCE_RADIUS_METERS = min(float(os.getenv('ATTENDANCE_RADIUS_METERS', '200')), 200.0)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
@@ -160,5 +165,5 @@ SOCIALACCOUNT_PROVIDERS = {
 
 LOGIN_URL = 'account_login'
 LOGOUT_URL = 'account_logout'
-LOGIN_REDIRECT_URL = f'{FRONTEND_URL}/'
+LOGIN_REDIRECT_URL = f'{FRONTEND_URL}/auth/callback'
 ACCOUNT_LOGOUT_REDIRECT_URL = f'{FRONTEND_URL}/login'
