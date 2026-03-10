@@ -14,9 +14,23 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.contrib import admin
-from django.urls import path
+from django.shortcuts import redirect
+from django.urls import include, path
+
+
+def react_login_redirect(request):
+    return redirect(f"{settings.FRONTEND_URL}/login")
+
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
+    path("accounts/login/", react_login_redirect, name="account_login"),
+
+    # allauth routes
+    path("accounts/", include("allauth.urls")),
+
+    # Optional backend alias that also sends users to React login.
+    path("login/", react_login_redirect),
 ]
