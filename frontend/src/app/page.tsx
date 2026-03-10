@@ -1,65 +1,132 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Navbar from "./components/Navbar";
+
+const backendBase = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://127.0.0.1:8000";
+
+type SignupProfile = {
+  firstName: string;
+  lastName: string;
+  role: "student" | "employee";
+  email: string;
+};
 
 export default function Home() {
+  const [loggedIn] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return localStorage.getItem("attendance_logged_in") === "true";
+  });
+  const [profile] = useState<SignupProfile | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    const rawProfile = localStorage.getItem("signup_profile");
+    if (!rawProfile) {
+      return null;
+    }
+    try {
+      return JSON.parse(rawProfile) as SignupProfile;
+    } catch {
+      return null;
+    }
+  });
+
+  const displayName = useMemo(() => {
+    if (!profile) {
+      return "Guest";
+    }
+    return `${profile.firstName} ${profile.lastName}`.trim();
+  }, [profile]);
+
+  const loginUrl = `${backendBase}/accounts/google/login/?next=${encodeURIComponent(
+    `${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/auth/callback`
+  )}`;
+
+  useEffect(() => {
+    if (loggedIn && !profile) {
+      window.location.href = "/login";
+    }
+  }, [loggedIn, profile]);
+
+  const completeProfileUrl = "/login";
+
+  const handleScanFace = () => {
+    if (!loggedIn) {
+      window.location.href = loginUrl;
+      return;
+    }
+
+    if (!profile?.firstName || !profile?.lastName || !profile?.role || !profile?.email) {
+      window.location.href = completeProfileUrl;
+      return;
+    }
+
+    window.location.href = "/scan";
+  };
+
+  const handleLogin = () => {
+    if (loggedIn) {
+      window.location.href = "/scan";
+      return;
+    }
+    window.location.href = loginUrl;
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <>
+      <Navbar />
+      <main className="min-h-screen bg-zinc-100 p-6 pt-24 md:p-10 md:pt-28">
+        <div className="mx-auto w-full max-w-4xl rounded-2xl bg-white p-8 shadow-lg">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-3xl font-bold text-zinc-900">Dashboard</h1>
+          </div>
+
+          <p className="mt-4 text-sm text-zinc-600">
+            {loggedIn ? `Logged in as ${displayName}` : "Not logged in"}
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {!loggedIn ? (
+              <button
+                onClick={handleLogin}
+                className="rounded-xl border border-zinc-200 bg-zinc-50 px-5 py-4 text-left hover:bg-zinc-100"
+              >
+                <p className="text-lg font-semibold text-zinc-900">Log In</p>
+                <p className="mt-1 text-sm text-zinc-600">
+                  Continue with Google OAuth account.
+                </p>
+              </button>
+            ) : null}
+
+            {(!loggedIn || profile?.role === "student") ? (
+              <button
+                onClick={handleScanFace}
+                className="rounded-xl bg-blue-600 px-5 py-4 text-left text-white hover:bg-blue-700"
+              >
+                <p className="text-lg font-semibold">Scan Face</p>
+                <p className="mt-1 text-sm text-blue-100">
+                  Start check-in workflow with location and face capture.
+                </p>
+              </button>
+            ) : null}
+
+            {loggedIn && profile?.role === "employee" ? (
+              <button
+                onClick={() => { window.location.href = "/scan"; }}
+                className="rounded-xl bg-indigo-600 px-5 py-4 text-left text-white hover:bg-indigo-700"
+              >
+                <p className="text-lg font-semibold">Employee Dashboard</p>
+                <p className="mt-1 text-sm text-indigo-100">
+                  Monitor student check-ins and manage event locations.
+                </p>
+              </button>
+            ) : null}
+          </div>
         </div>
       </main>
-    </div>
+    </>
   );
 }
